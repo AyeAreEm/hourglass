@@ -1,7 +1,7 @@
-# Tauri + SvelteKit
+# hourglass
+hourglass is a play time tracker made with Tauri + Svelte
 
-This template should help get you started developing with Tauri and SvelteKit in Vite.
-
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+# To run
+Note: you need cargo and npm
+hourglass is not finished development yet so for now, run <br>
+`npm run tauri dev`<br>
