@@ -1,6 +1,14 @@
 <script>
     import { invoke } from "@tauri-apps/api";
 
+    let games = [];
+    const game_names = { ...localStorage };
+    for (const name in game_names) {
+        invoke("insert_new_game", {newGame: name})
+        games.push({name, stats: JSON.parse(game_names[name])})
+    }
+    console.log(games);
+
     /** @type {HTMLDialogElement} */
     let add_game_dialog;
     let is_showing_add_game_dialog = false;
@@ -16,10 +24,9 @@
     }
 
     let new_game = "";
-
     /** @type {number} */
     let new_game_total_hours;
-    function add_game() {
+    async function add_game() {
         if (localStorage.getItem(new_game) == null) {
             let data = {
                 total: Number(new_game_total_hours),
@@ -28,13 +35,8 @@
             };
             let json_data = JSON.stringify(data);
             localStorage.setItem(new_game, json_data);
+            invoke("insert_new_game", {newGame: new_game});
         }
-    }
-
-    // let inp_process_name = "";
-    // let found_process = false;
-    async function find_process() {
-        // found_process = await invoke("find_process", { processName: inp_process_name });
     }
 </script>
 
@@ -51,26 +53,17 @@
         </div>
     </dialog>
 
-    {#each {length: 5} as _}
+    {#each games as game}
         <div class="stats">
-            <div class="stat-item" title="name">The Elder Scrolls: Skyrim Special Edition</div>
+            <div class="stat-item" title="name">{game.name}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="total">100hrs</div>
+            <div class="stat-item" title="total">{game.stats.total}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="longest session">10hrs</div>
+            <div class="stat-item" title="longest session">{game.stats.longest_sesh}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="today">5hrs</div>
+            <div class="stat-item" title="today">{game.stats.today}</div>
         </div>
     {/each}
-
-    <!-- <input type="text" bind:value={inp_process_name}> -->
-    <!-- <button on:click={find_process}>find</button> -->
-    <!---->
-    <!-- {#if found_process} -->
-    <!--     <h1>found {inp_process_name}</h1> -->
-    <!-- {:else}  -->
-    <!--     <p></p> -->
-    <!-- {/if} -->
 </div>
 
 <style>
