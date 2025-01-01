@@ -1,67 +1,88 @@
 <script>
     import { invoke } from "@tauri-apps/api";
 
-    let games = [];
-    const game_names = { ...localStorage };
-    for (const name in game_names) {
-        invoke("insert_new_game", {newGame: name})
-        games.push({name, stats: JSON.parse(game_names[name])})
+    let programs = [];
+    const program_names = { ...localStorage };
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+    invoke("compare_timestamps", {today: today.getTime()}).then(same_day => {
+        if (!same_day) {
+            for (const name in program_names) {
+                localStorage.removeItem(name);
+                let stats = program_names[name];
+                stats.today = 0;
+
+                let json_data = JSON.stringify(stats);
+                localStorage.setItem(name, json_data);
+            }
+        }
+    });
+
+    for (const name in program_names) {
+        invoke("insert_new_program", {newProgram: {name, stats: JSON.parse(program_names[name])}})
+        programs = [...programs, {name, stats: JSON.parse(program_names[name])}];
     }
-    console.log(games);
 
     /** @type {HTMLDialogElement} */
-    let add_game_dialog;
-    let is_showing_add_game_dialog = false;
-    function toggle_add_game_dialog() {
-        is_showing_add_game_dialog = !is_showing_add_game_dialog;
+    let add_program_dialog;
+    let is_showing_add_program_dialog = false;
+    function toggle_add_program_dialog() {
+        is_showing_add_program_dialog = !is_showing_add_program_dialog;
 
-        if (is_showing_add_game_dialog) {
-            add_game_dialog.showModal();
+        if (is_showing_add_program_dialog) {
+            add_program_dialog.showModal();
             return
         }
 
-        add_game_dialog.close();
+        add_program_dialog.close();
     }
 
-    let new_game = "";
+    let new_program = "";
     /** @type {number} */
-    let new_game_total_hours;
-    async function add_game() {
-        if (localStorage.getItem(new_game) == null) {
+    let new_program_total_hours;
+    async function add_program() {
+        if (localStorage.getItem(new_program) == null) {
             let data = {
-                total: Number(new_game_total_hours),
+                total: Number(new_program_total_hours),
                 longest_sesh: 0,
                 today: 0,
             };
+            programs = [...programs, {name: new_program, stats: data}];
+
             let json_data = JSON.stringify(data);
-            localStorage.setItem(new_game, json_data);
-            invoke("insert_new_game", {newGame: new_game});
+            localStorage.setItem(new_program, json_data);
+
+            invoke("insert_new_program", {newGame: new_program});
+            toggle_add_program_dialog();
         }
     }
+
+    $: programs_data = programs;
 </script>
 
 <div class="container">
     <h1 class="logo">hourglass</h1>
-    <button on:click={toggle_add_game_dialog} style="position: absolute; top: 0; right: 0; margin: 15px; cursor: pointer;">+</button>
+    <button on:click={toggle_add_program_dialog} style="position: absolute; top: 0; right: 0; margin: 15px; cursor: pointer;">+</button>
 
-    <dialog bind:this={add_game_dialog}>
+    <dialog bind:this={add_program_dialog}>
         <div style="margin: 15px;">
-            <label>name: </label><input bind:value={new_game} placeholder="game name" style="cursor: text; margin: 10px;"/><br>
-            <label>total hours: </label><input bind:value={new_game_total_hours} placeholder="0.5 (30 minutes)" style="cursor: text; margin: 10px; margin-bottom: 20px;"/><br>
-            <button on:click={toggle_add_game_dialog} style="float: left; margin-bottom: 20px; cursor: pointer;">cancel</button>
-            <button on:click={add_game} style="float: right; cursor: pointer;">add</button>
+            <label>name: </label><input bind:value={new_program} placeholder="program name" style="cursor: text; margin: 10px;"/><br>
+            <label>total hours: </label><input bind:value={new_program_total_hours} placeholder="0.5 (30 minutes)" style="cursor: text; margin: 10px; margin-bottom: 20px;"/><br>
+            <button on:click={toggle_add_program_dialog} style="float: left; margin-bottom: 20px; cursor: pointer;">cancel</button>
+            <button on:click={add_program} style="float: right; cursor: pointer;">add</button>
         </div>
     </dialog>
 
-    {#each games as game}
+    {#each programs_data as program}
         <div class="stats">
-            <div class="stat-item" title="name">{game.name}</div>
+            <div class="stat-item" title="name">{program.name}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="total">{game.stats.total}</div>
+            <div class="stat-item" title="total">{program.stats.total}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="longest session">{game.stats.longest_sesh}</div>
+            <div class="stat-item" title="longest session">{program.stats.longest_sesh}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="today">{game.stats.today}</div>
+            <div class="stat-item" title="today">{program.stats.today}</div>
         </div>
     {/each}
 </div>
