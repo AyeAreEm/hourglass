@@ -1,5 +1,5 @@
 # hourglass
-hourglass is a play time tracker made with Tauri + Svelte
+hourglass is a time tracker for programs made with Tauri + Svelte
 
 # To run
 Note: you need cargo and npm
