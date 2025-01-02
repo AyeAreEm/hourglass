@@ -1,5 +1,6 @@
 <script>
     import { invoke } from "@tauri-apps/api";
+    import { listen } from "@tauri-apps/api/event";
 
     let programs = [];
     const program_names = { ...localStorage };
@@ -10,8 +11,9 @@
         if (!same_day) {
             for (const name in program_names) {
                 localStorage.removeItem(name);
-                let stats = program_names[name];
+                let stats = JSON.parse(program_names[name]);
                 stats.today = 0;
+                stats.todays_sesh = 0;
 
                 let json_data = JSON.stringify(stats);
                 localStorage.setItem(name, json_data);
@@ -23,6 +25,43 @@
         invoke("insert_new_program", {newProgram: {name, stats: JSON.parse(program_names[name])}})
         programs = [...programs, {name, stats: JSON.parse(program_names[name])}];
     }
+
+    listen("update-longest-sesh", update => {
+        for (const program of programs) {
+            if (program.name === update.payload.name) {
+                program.stats.longest_sesh = update.payload.sesh;
+                localStorage.removeItem(program.name);
+                localStorage.setItem(program.name, JSON.stringify(program.stats));
+            }
+        }
+    });
+
+    listen("update-program-data", updated => {
+        for (const program of programs) {
+            for (const updated_program of updated.payload) {
+                if (program.name !== updated_program.name) {
+                    continue;
+                }
+
+                let changed = false;
+                if (program.stats.total < updated_program.stats.total) {
+                    program.stats.total = updated_program.stats.total;
+                    changed = true;
+                }
+                if (program.stats.today < updated_program.stats.today) {
+                    program.stats.today = updated_program.stats.today;
+                    changed = true;
+                }
+
+                if (changed) {
+                    localStorage.removeItem(program.name);
+                    localStorage.setItem(program.name, JSON.stringify(program.stats));
+                }
+            }
+        }
+
+        programs = programs;
+    });
 
     /** @type {HTMLDialogElement} */
     let add_program_dialog;
@@ -46,6 +85,7 @@
             let data = {
                 total: Number(new_program_total_hours),
                 longest_sesh: 0,
+                todays_sesh: 0,
                 today: 0,
             };
             programs = [...programs, {name: new_program, stats: data}];
@@ -53,7 +93,7 @@
             let json_data = JSON.stringify(data);
             localStorage.setItem(new_program, json_data);
 
-            invoke("insert_new_program", {newGame: new_program});
+            invoke("insert_new_program", {newProgram: {name: new_program, stats: data}});
             toggle_add_program_dialog();
         }
     }
@@ -68,7 +108,7 @@
     <dialog bind:this={add_program_dialog}>
         <div style="margin: 15px;">
             <label>name: </label><input bind:value={new_program} placeholder="program name" style="cursor: text; margin: 10px;"/><br>
-            <label>total hours: </label><input bind:value={new_program_total_hours} placeholder="0.5 (30 minutes)" style="cursor: text; margin: 10px; margin-bottom: 20px;"/><br>
+            <label>total hours: </label><input type="number" bind:value={new_program_total_hours} placeholder="0.5 (30 minutes)" style="cursor: text; margin: 10px; margin-bottom: 20px;"/><br>
             <button on:click={toggle_add_program_dialog} style="float: left; margin-bottom: 20px; cursor: pointer;">cancel</button>
             <button on:click={add_program} style="float: right; cursor: pointer;">add</button>
         </div>
@@ -78,11 +118,11 @@
         <div class="stats">
             <div class="stat-item" title="name">{program.name}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="total">{program.stats.total}</div>
+            <div class="stat-item" title="total">{Math.round(program.stats.total * 10) / 10}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="longest session">{program.stats.longest_sesh}</div>
+            <div class="stat-item" title="longest session">{Math.round(program.stats.longest_sesh * 10) / 10}</div>
             <div class="vl"></div>
-            <div class="stat-item" title="today">{program.stats.today}</div>
+            <div class="stat-item" title="today">{Math.round(program.stats.today * 10) / 10}</div>
         </div>
     {/each}
 </div>
