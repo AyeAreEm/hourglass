@@ -134,7 +134,7 @@ fn main() {
                         Ok(_) => (),
                         Err(e) => eprintln!("error: {e}"),
                     }
-                    thread::sleep(Duration::from_secs(2));
+                    thread::sleep(Duration::from_secs(60));
                     updated_programs.clear();
                 }
             });
